@@ -56,3 +56,14 @@ async def get_job_descriptions(
         ]
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_job_description(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete a job description by ID"""
+    deleted = await JobService.delete_job(db, job_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Job description not found")

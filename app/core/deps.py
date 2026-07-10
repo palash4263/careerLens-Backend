@@ -19,16 +19,19 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     payload = decode_token(token)
-    email = payload.get("sub")
-    
-    if email is None:
+    user_id = payload.get("sub")
+
+    if user_id is None:
         raise credentials_exception
-    
-    user = await AuthService.get_user_by_email(db, email)
-    
+
+    try:
+        user = await AuthService.get_user_by_id(db, int(user_id))
+    except (ValueError, TypeError):
+        raise credentials_exception
+
     if user is None:
         raise credentials_exception
-    
+
     return user

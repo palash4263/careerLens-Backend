@@ -5,7 +5,8 @@ import uvicorn
 import logging
 import os
 
-from app.api.routes import auth, resumes
+# ✅ Import all routers
+from app.api.routes import auth, resumes, ats, jobs, optimization
 from app.core.database import init_db
 from app.config import settings
 
@@ -23,18 +24,27 @@ app = FastAPI(
     redoc_url="/api/redoc"
 )
 
-# CORS
+# ✅ FIXED CORS – specify exact origins (no "*" with credentials)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+        # Add your production domain here later
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
+# ✅ Include all routers with their prefixes
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(resumes.router, prefix="/api/resumes", tags=["Resumes"])
+app.include_router(ats.router, prefix="/api/ats", tags=["ATS"])
+app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
+app.include_router(optimization.router, prefix="/api/optimization", tags=["Optimization"])
 
 @app.on_event("startup")
 async def startup_event():

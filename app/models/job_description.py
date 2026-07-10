@@ -1,7 +1,7 @@
 # app/models/job_description.py
 from sqlalchemy import Column, Integer, String, DateTime, Text
 from sqlalchemy.sql import func
-from app.core.database import Base
+from app.core.database import Base  
 from datetime import datetime
 
 class JobDescription(Base):

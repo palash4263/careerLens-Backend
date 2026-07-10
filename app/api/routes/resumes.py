@@ -65,3 +65,26 @@ async def delete_resume(
     deleted = await ResumeService.delete_resume(db, resume_id, current_user.id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Resume not found")
+
+@router.get("/{resume_id}/file")
+async def get_resume_file(
+    resume_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get the physical PDF file of a resume"""
+    import os
+    from fastapi.responses import FileResponse
+    
+    resume = await ResumeService.get_resume_by_id(db, resume_id, current_user.id)
+    if not resume:
+        raise HTTPException(status_code=404, detail="Resume not found")
+    
+    if not os.path.exists(resume.file_path):
+        raise HTTPException(status_code=404, detail="Physical file not found")
+    
+    return FileResponse(
+        path=resume.file_path,
+        media_type="application/pdf",
+        filename=resume.file_name
+    )

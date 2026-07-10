@@ -49,3 +49,20 @@ class JobService:
             .order_by(desc(JobDescription.created_at))
         )
         return result.scalars().all()
+
+    @staticmethod
+    async def delete_job(
+        db: AsyncSession,
+        job_id: int
+    ) -> bool:
+        """Delete a job description by ID"""
+        result = await db.execute(
+            select(JobDescription).where(JobDescription.id == job_id)
+        )
+        job = result.scalar_one_or_none()
+        if not job:
+            return False
+            
+        await db.delete(job)
+        await db.commit()
+        return True
