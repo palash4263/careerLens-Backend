@@ -7,6 +7,9 @@ from app.core.database import get_db
 from app.core.security import decode_token
 from app.services.auth_service import AuthService
 
+import logging
+
+logger = logging.getLogger(__name__)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
 async def get_current_user(
@@ -34,4 +37,5 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
 
+    logger.info(f"👤 Active user session: {user.email} (ID: {user.id})")
     return user

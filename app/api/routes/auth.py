@@ -62,6 +62,7 @@ async def login(
     try:
         logger.info(f"🔑 Login attempt for: {request.email}")
         result = await AuthService.login(db, request.email, request.password)
+        logger.info(f"🔑 Manual login successful for: {request.email}")
         return LoginResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(e))
