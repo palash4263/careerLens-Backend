@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
     GROQ_TEMPERATURE: float = 0.85
     GROQ_MAX_TOKENS: int = 8192  # ✅ Increased for more content
+
+    # Razorpay Keys
+    RAZORPAY_KEY_ID: str = "rzp_test_p0v2lQhWw7eA9B"
+    RAZORPAY_KEY_SECRET: str = "mock_secret"
     
     class Config:
         env_file = ".env"

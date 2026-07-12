@@ -5,7 +5,7 @@ import uvicorn
 import logging
 import os
 
-from app.api.routes import auth, resumes, ats, jobs, optimization  # ✅ Make sure optimization is imported
+from app.api.routes import auth, resumes, ats, jobs, optimization, payments  # ✅ Make sure payments is imported
 from app.core.database import init_db
 from app.config import settings
 
@@ -38,6 +38,7 @@ app.include_router(resumes.router, prefix="/api/resumes", tags=["Resumes"])
 app.include_router(ats.router, prefix="/api/ats", tags=["ATS"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(optimization.router, prefix="/api/optimization", tags=["Optimization"])  # ✅ Add this
+app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])  # ✅ Razorpay integration
 
 @app.on_event("startup")
 async def startup_event():

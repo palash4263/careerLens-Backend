@@ -17,3 +17,4 @@ beautifulsoup4==4.12.3
 groq
 google-auth
 requests
+razorpay==1.4.1
