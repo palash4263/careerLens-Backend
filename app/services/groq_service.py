@@ -120,3 +120,56 @@ class GroqService:
         Return ONLY the optimized resume text.
         Make it comprehensive and detailed.
         """
+
+    async def optimize_section(
+        self,
+        resume_text: str,
+        section_name: str,
+        job_description: str,
+        custom_prompt: str = ""
+    ) -> str:
+        """Optimize a specific section of a resume using Groq AI"""
+        try:
+            prompt = f"""
+            🎯 TARGET: Optimize the "{section_name}" section of a resume for maximum ATS compatibility.
+            
+            JOB DESCRIPTION (Target keywords and skills):
+            {job_description}
+            
+            ORIGINAL RESUME CONTENT:
+            {resume_text}
+            
+            INSTRUCTIONS:
+            1. Rewrite and optimize only the "{section_name}" section.
+            2. Integrate relevant keywords and skills from the job description naturally.
+            3. Quantify achievements (percentages, numbers, impact) where possible.
+            4. Keep the output professional, detailed, and clean.
+            5. Return ONLY the rewritten content for the "{section_name}" section. Do NOT include any intro, outro, headers, markdown tags like ``` or explanation. Just return the optimized text.
+            """
+            
+            if custom_prompt:
+                prompt += f"\nADDITIONAL CUSTOMIZATION INSTRUCTIONS FROM USER:\n{custom_prompt}\n"
+                
+            response = await self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": "You are an elite ATS resume optimization expert. Write optimized resume sections based on job descriptions."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.8,
+                max_tokens=2048,
+            )
+            
+            optimized_text = response.choices[0].message.content.strip()
+            if optimized_text.startswith("```"):
+                lines = optimized_text.split("\n")
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines[-1].startswith("```"):
+                    lines = lines[:-1]
+                optimized_text = "\n".join(lines).strip()
+                
+            return optimized_text
+        except Exception as e:
+            logger.error(f"❌ Groq section optimization failed: {str(e)}")
+            return ""

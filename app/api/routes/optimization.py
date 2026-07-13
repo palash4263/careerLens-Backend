@@ -32,13 +32,16 @@ async def optimize_section(
     resume_id: int,
     section_name: str,
     job_description_id: int,
+    prompt: Optional[str] = None,
+    instructions: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """Optimize a specific section of a resume"""
     try:
         service = OptimizationService()
-        result = await service.optimize_section(db, resume_id, section_name, job_description_id)
+        custom_prompt = prompt or instructions or ""
+        result = await service.optimize_section(db, resume_id, section_name, job_description_id, custom_prompt)
         return result
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))

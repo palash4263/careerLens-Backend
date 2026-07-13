@@ -171,3 +171,38 @@ class OptimizationService:
                 "skill_improvement": 0,
                 "job_skill_coverage": 0
             }
+
+    async def optimize_section(
+        self,
+        db: AsyncSession,
+        resume_id: int,
+        section_name: str,
+        job_description_id: int,
+        custom_prompt: str = ""
+    ) -> Dict[str, Any]:
+        """Optimize a specific section of a resume using AI"""
+        try:
+            resume = await self._get_resume(db, resume_id)
+            job = await self._get_job(db, job_description_id)
+            
+            if not resume:
+                raise ValueError(f"Resume with ID {resume_id} not found")
+            if not job:
+                raise ValueError(f"Job Description with ID {job_description_id} not found")
+                
+            logger.info(f"📝 Optimizing section {section_name} of resume {resume_id} for job {job_description_id}")
+            
+            optimized_content = await self.groq_service.optimize_section(
+                resume.extracted_text or "",
+                section_name,
+                job.description,
+                custom_prompt
+            )
+            
+            return {
+                "section_name": section_name,
+                "optimized_text": optimized_content
+            }
+        except Exception as e:
+            logger.error(f"❌ Section optimization failed: {str(e)}")
+            raise
