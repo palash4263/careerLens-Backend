@@ -171,3 +171,76 @@ async def google_auth(
         token_type="bearer",
         user=user_response,   # ✅ Fixed: was 'user_res' before
     )
+
+
+# -------------------------------------------------------------------
+# Password Reset Endpoints
+# -------------------------------------------------------------------
+from pydantic import BaseModel, EmailStr
+from datetime import timedelta
+from app.core.security import get_password_hash, decode_token
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    password: str
+
+@router.post("/forgot-password")
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Generate stateless reset token and print reset link to console log"""
+    email = payload.email
+    stmt = select(User).where(User.email == email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    # Stateless token generation (expires in 15 minutes)
+    expires = timedelta(minutes=15)
+    reset_token = create_access_token(
+        data={"sub": email, "purpose": "reset"},
+        expires_delta=expires
+    )
+    
+    # Build local testing link
+    reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+    logger.info(f"🔑 PASSWORD RESET REQUESTED FOR: {email}")
+    logger.info(f"🔗 RESET LINK FOR DEVELOPER: {reset_link}")
+    
+    return {
+        "status": "success",
+        "message": "If the email is registered, a password reset link has been logged in the backend console."
+    }
+
+@router.post("/reset-password")
+async def reset_password(
+    payload: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    """Verify reset token and update database password"""
+    token_data = decode_token(payload.token)
+    if not token_data or token_data.get("purpose") != "reset":
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+        
+    email = token_data.get("sub")
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid token payload")
+        
+    stmt = select(User).where(User.email == email)
+    result = await db.execute(stmt)
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    user.password = get_password_hash(payload.password)
+    await db.commit()
+    
+    logger.info(f"✅ Password reset successfully for: {email}")
+    return {
+        "status": "success",
+        "message": "Password has been reset successfully. You can now log in."
+    }
