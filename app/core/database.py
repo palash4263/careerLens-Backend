@@ -48,6 +48,11 @@ async def init_db():
             # This creates all tables defined in models
             await conn.run_sync(Base.metadata.create_all)
             logger.info("✅ Database tables created successfully")
+
+            # Run ALTER queries to add user_id columns if they don't exist in existing tables
+            await conn.execute(text("ALTER TABLE resumes ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;"))
+            await conn.execute(text("ALTER TABLE job_descriptions ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL;"))
+            logger.info("✅ Database tables migrated with user_id columns successfully")
             
             # Check if tables exist
             result = await conn.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))

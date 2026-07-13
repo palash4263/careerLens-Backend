@@ -32,6 +32,7 @@ class ResumeService:
         
         # Create resume with uploaded_at set to now
         resume = Resume(
+            user_id=user_id,
             file_name=file_name,
             file_path=file_path,
             extracted_text=extracted_text,
@@ -52,6 +53,7 @@ class ResumeService:
     async def get_user_resumes(db: AsyncSession, user_id: int):
         result = await db.execute(
             select(Resume)
+            .where(Resume.user_id == user_id)
             .order_by(desc(Resume.uploaded_at).nulls_last())  # ✅ Handle nulls
         )
         return result.scalars().all()
@@ -61,6 +63,7 @@ class ResumeService:
         result = await db.execute(
             select(Resume)
             .where(Resume.id == resume_id)
+            .where(Resume.user_id == user_id)
         )
         resume = result.scalar_one_or_none()
         return resume
@@ -70,6 +73,7 @@ class ResumeService:
         result = await db.execute(
             select(Resume)
             .where(Resume.id == resume_id)
+            .where(Resume.user_id == user_id)
         )
         resume = result.scalar_one_or_none()
         if not resume:

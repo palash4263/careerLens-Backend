@@ -12,10 +12,12 @@ class JobService:
     @staticmethod
     async def create_job(
         db: AsyncSession,
-        request: JobDescriptionCreate
+        request: JobDescriptionCreate,
+        user_id: int
     ) -> JobDescription:
         """Create a new job description"""
         job = JobDescription(
+            user_id=user_id,
             company=request.company,
             title=request.title,
             description=request.description,
@@ -31,21 +33,26 @@ class JobService:
     @staticmethod
     async def get_job_by_id(
         db: AsyncSession,
-        job_id: int
+        job_id: int,
+        user_id: int
     ) -> Optional[JobDescription]:
         """Get a job description by ID"""
         result = await db.execute(
-            select(JobDescription).where(JobDescription.id == job_id)
+            select(JobDescription)
+            .where(JobDescription.id == job_id)
+            .where(JobDescription.user_id == user_id)
         )
         return result.scalar_one_or_none()
     
     @staticmethod
     async def get_all_jobs(
-        db: AsyncSession
+        db: AsyncSession,
+        user_id: int
     ) -> List[JobDescription]:
         """Get all job descriptions"""
         result = await db.execute(
             select(JobDescription)
+            .where(JobDescription.user_id == user_id)
             .order_by(desc(JobDescription.created_at))
         )
         return result.scalars().all()
@@ -53,11 +60,14 @@ class JobService:
     @staticmethod
     async def delete_job(
         db: AsyncSession,
-        job_id: int
+        job_id: int,
+        user_id: int
     ) -> bool:
         """Delete a job description by ID"""
         result = await db.execute(
-            select(JobDescription).where(JobDescription.id == job_id)
+            select(JobDescription)
+            .where(JobDescription.id == job_id)
+            .where(JobDescription.user_id == user_id)
         )
         job = result.scalar_one_or_none()
         if not job:

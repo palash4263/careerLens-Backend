@@ -20,7 +20,7 @@ async def create_job_description(
 ):
     """Create a new job description"""
     try:
-        job = await JobService.create_job(db, request)
+        job = await JobService.create_job(db, request, current_user.id)
         
         # ✅ Ensure created_at is a datetime object
         created_at = job.created_at if hasattr(job, 'created_at') else datetime.now()
@@ -42,7 +42,7 @@ async def get_job_descriptions(
 ):
     """Get all job descriptions"""
     try:
-        jobs = await JobService.get_all_jobs(db)
+        jobs = await JobService.get_all_jobs(db, current_user.id)
         
         return [
             JobDescriptionResponse(
@@ -64,6 +64,6 @@ async def delete_job_description(
     db: AsyncSession = Depends(get_db)
 ):
     """Delete a job description by ID"""
-    deleted = await JobService.delete_job(db, job_id)
+    deleted = await JobService.delete_job(db, job_id, current_user.id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Job description not found")
