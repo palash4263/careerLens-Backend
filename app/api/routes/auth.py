@@ -179,6 +179,7 @@ async def google_auth(
 from pydantic import BaseModel, EmailStr
 from datetime import timedelta
 from app.core.security import get_password_hash, decode_token
+from app.utils.email import send_reset_password_email
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
@@ -192,7 +193,7 @@ async def forgot_password(
     payload: ForgotPasswordRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """Generate stateless reset token and print reset link to console log"""
+    """Generate stateless reset token and print reset link to console log / send via SMTP email"""
     email = payload.email
     stmt = select(User).where(User.email == email)
     result = await db.execute(stmt)
@@ -205,14 +206,20 @@ async def forgot_password(
         expires_delta=expires
     )
     
-    # Build local testing link
-    reset_link = f"http://localhost:5173/reset-password?token={reset_token}"
+    # Build live reset link pointing to production domain
+    reset_link = f"https://careerlens.tech/reset-password?token={reset_token}"
+    
+    # Build local testing link for console logging fallback
+    dev_link = f"http://localhost:5173/reset-password?token={reset_token}"
     logger.info(f"🔑 PASSWORD RESET REQUESTED FOR: {email}")
-    logger.info(f"🔗 RESET LINK FOR DEVELOPER: {reset_link}")
+    logger.info(f"🔗 DEVELOPER LOCAL LINK: {dev_link}")
+    
+    # Send email dispatch
+    email_sent = send_reset_password_email(email, reset_link)
     
     return {
         "status": "success",
-        "message": "If the email is registered, a password reset link has been logged in the backend console."
+        "message": "If the email is registered, a password reset link has been sent to your Gmail inbox." if email_sent else "If the email is registered, a password reset link has been logged in the backend console."
     }
 
 @router.post("/reset-password")

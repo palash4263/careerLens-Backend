@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     # Razorpay Keys
     RAZORPAY_KEY_ID: str = "rzp_test_p0v2lQhWw7eA9B"
     RAZORPAY_KEY_SECRET: str = "mock_secret"
+
+    # SMTP Mail Settings
+    SMTP_HOST: str = "smtp.gmail.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: Optional[str] = None
+    SMTP_PASSWORD: Optional[str] = None
+    SMTP_FROM: Optional[str] = None
     
     class Config:
         env_file = ".env"
