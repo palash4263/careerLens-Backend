@@ -155,10 +155,17 @@ class JobService:
                 content = "\n".join(lines).strip()
                 
             data = json.loads(content)
+            title = data.get("title", "").strip()
+            company = data.get("company", "").strip()
+            description = data.get("description", "").strip()
+
+            if not title and not description:
+                raise Exception("This job site is protected by anti-bot firewalls (like Cloudflare/CAPTCHA) or requires JavaScript to load. Please copy and paste the job details manually.")
+
             return {
-                "title": data.get("title", ""),
-                "company": data.get("company", ""),
-                "description": data.get("description", "")
+                "title": title,
+                "company": company,
+                "description": description
             }
         except Exception as e:
             raise Exception(f"AI parsing of job page failed: {str(e)}")
