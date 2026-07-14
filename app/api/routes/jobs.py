@@ -67,3 +67,23 @@ async def delete_job_description(
     deleted = await JobService.delete_job(db, job_id, current_user.id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Job description not found")
+
+from pydantic import BaseModel
+
+class UrlFetchRequest(BaseModel):
+    url: str
+
+@router.post("/fetch-from-url")
+async def fetch_job_from_url(
+    request: UrlFetchRequest,
+    current_user: User = Depends(get_current_user)
+):
+    """Scrape and parse a job description from a URL using AI"""
+    try:
+        data = await JobService.fetch_job_from_url(request.url)
+        return data
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
