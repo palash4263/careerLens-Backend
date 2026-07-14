@@ -1,89 +1,75 @@
-# app/api/routes/jobs.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List
-from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
 
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User
-from app.schemas.job_description import JobDescriptionCreate, JobDescriptionResponse
-from app.services.job_service import JobService
+from app.services.optimization_service import OptimizationService
 
 router = APIRouter()
 
-@router.post("/", response_model=JobDescriptionResponse, status_code=status.HTTP_201_CREATED)
-async def create_job_description(
-    request: JobDescriptionCreate,
+# --- Request Data Schemas ---
+
+class OptimizeResumeRequest(BaseModel):
+    resume_id: int
+    job_description_id: int
+
+class OptimizeSectionRequest(BaseModel):
+    resume_id: int
+    section_name: str
+    job_description_id: int
+    prompt: Optional[str] = None
+    instructions: Optional[str] = None
+
+
+# --- Endpoints ---
+
+@router.post("/optimize")
+async def optimize_resume(
+    payload: OptimizeResumeRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Create a new job description"""
+    """Optimize a resume for a specific job description using AI"""
     try:
-        job = await JobService.create_job(db, request, current_user.id)
-        
-        # ✅ Ensure created_at is a datetime object
-        created_at = job.created_at if hasattr(job, 'created_at') else datetime.now()
-        
-        return JobDescriptionResponse(
-            id=job.id,
-            title=job.title,
-            company=job.company,
-            description=job.description,
-            created_at=created_at
-        )
+        service = OptimizationService()
+        result = await service.optimize_resume(db, payload.resume_id, payload.job_description_id)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-@router.get("/", response_model=List[JobDescriptionResponse])
-async def get_job_descriptions(
+
+@router.post("/optimize-section")
+async def optimize_section(
+    payload: OptimizeSectionRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    """Get all job descriptions"""
+    """Optimize a specific section of a resume"""
     try:
-        jobs = await JobService.get_all_jobs(db, current_user.id)
+        service = OptimizationService()
+        # Fall back gracefully through prompt definitions
+        custom_prompt = payload.prompt or payload.instructions or ""
         
-        return [
-            JobDescriptionResponse(
-                id=job.id,
-                title=job.title,
-                company=job.company,
-                description=job.description,
-                created_at=job.created_at if hasattr(job, 'created_at') else None
-            )
-            for job in jobs
-        ]
+        result = await service.optimize_section(
+            db, 
+            payload.resume_id, 
+            payload.section_name, 
+            payload.job_description_id, 
+            custom_prompt
+        )
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-@router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_job_description(
-    job_id: int,
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db)
-):
-    """Delete a job description by ID"""
-    deleted = await JobService.delete_job(db, job_id, current_user.id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Job description not found")
 
-from pydantic import BaseModel
-
-class UrlFetchRequest(BaseModel):
-    url: str
-
-@router.post("/fetch-from-url")
-async def fetch_job_from_url(
-    request: UrlFetchRequest,
-    current_user: User = Depends(get_current_user)
-):
-    """Scrape and parse a job description from a URL using AI"""
-    try:
-        data = await JobService.fetch_job_from_url(request.url)
-        return data
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+@router.get("/test")
+async def test_optimization():
+    """Test endpoint to verify optimization router is working"""
+    return {"message": "Optimization router is working!"}
