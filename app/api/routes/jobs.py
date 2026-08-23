@@ -17,6 +17,12 @@ class JobUrlRequest(BaseModel):
     url: str
 
 
+class JobSearchRequest(BaseModel):
+    keyword: str
+    location: str = ""
+    sources: list = ["naukri"]
+
+
 # --- Helper to serialize a JobDescription ORM object ---
 
 def serialize_job(job) -> dict:
@@ -90,5 +96,15 @@ async def fetch_job_from_url(
     try:
         data = await JobService.fetch_job_from_url(payload.url)
         return data
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/search")
+async def search_jobs(payload: JobSearchRequest):
+    """Search and scrape jobs from Naukri and other platforms"""
+    try:
+        result = await JobService.search_jobs(payload.keyword, payload.location)
+        return result
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
